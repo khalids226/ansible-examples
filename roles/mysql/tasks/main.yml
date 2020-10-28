@@ -1,0 +1,28 @@
+---
+- name: install EPEL (Extra Packages for Enterprise Linux)
+  yum:
+    name: "{{ item }}"
+  with_items:
+    - epel-release
+- name: Install Mysql repository
+  yum: name=https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm state=present
+
+- name: Install Mysql package
+  yum: name={{ item }} state=present
+  with_items:
+   - mysql-server
+   - MySQL-python
+   - libselinux-python
+   - libsemanage-python
+
+- name: Configure SELinux to start mysql on any port
+  seboolean: name=mysql_connect_any state=true persistent=yes
+  when: ansible_selinux.status == "enabled"
+
+- name: Create Mysql configuration file
+  template: src=my.cnf.j2 dest=/etc/my.cnf
+  notify:
+  - restart mysql
+
+- name: Start Mysql Service
+  service: name=mysqld state=started enabled=yes
